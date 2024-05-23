@@ -8,6 +8,7 @@ using MaterialSkin;
 using MaterialSkin.Controls;
 using eft_dma_radar.Properties;
 using System.Windows.Forms;
+using System.Collections.Generic;
 
 namespace eft_dma_radar
 {
@@ -191,7 +192,6 @@ namespace eft_dma_radar
             this.Enabled = false; // Lock window
 
             Config.SaveConfig(_config); // Save Config to Config.json
-            Memory.Toolbox?.StopToolbox();
             Memory.Loot?.StopAutoRefresh();
             Memory.Shutdown(); // Wait for Memory Thread to gracefully exit
             e.Cancel = false; // Ready to close
@@ -203,8 +203,8 @@ namespace eft_dma_radar
         /// </summary>
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData) => keyData switch
         {
-            Keys.F1 => ZoomIn(5),
-            Keys.F2 => ZoomOut(5),
+            Keys.Up => ZoomIn(5),
+            Keys.Down => ZoomOut(5),
             Keys.F3 => swShowLoot.Checked = !swShowLoot.Checked,
             Keys.F4 => swAimview.Checked = !swAimview.Checked,
             Keys.F5 => ToggleMap(),
@@ -607,7 +607,55 @@ namespace eft_dma_radar
             {
                 GenerateCards(flpPlayerLoadoutsPlayers, x => x.IsHumanHostileActive, x => x.IsPMC, x => x.Value);
                 GenerateCards(flpPlayerLoadoutsAI, x => x.IsHostileActive && !x.IsHuman, x => x.Type == PlayerType.Boss, x => x.IsBossRaider, x => x.Value);
+            }
+            else if (tabControlMain.SelectedIndex == 5)
+            {
+                lootListListView.Items.Clear();
 
+                var localPlayer = this.LocalPlayer;
+                if (this.InGame && localPlayer is not null)
+                {
+                    var loot = this.Loot;
+                    if (loot is not null)
+                    {
+                        var filter = loot.Filter;
+                        if (filter is not null)
+                        {
+                            List<(string name, int value)> rawItems = new() { };
+
+                            foreach (var item in filter)
+                            {
+                                if (item is LootItem lootItem)
+                                {
+                                    rawItems.Add((item.Name, item.Value));
+                                }
+                                else if (item is LootContainer container)
+                                {
+                                    foreach (var containerItem in ((LootContainer)item).Items)
+                                    {
+                                        rawItems.Add((item.Name+">"+containerItem.Name, containerItem.Value));
+                                    }
+                                }
+                                else
+                                {
+                                    // skip corpses
+                                    continue;
+                                }
+                            }
+
+                            List<(string name, int value)> sortedItems = rawItems.OrderByDescending(item => item.value).ToList();
+                            foreach (var item in sortedItems)
+                            {
+                                var listViewItem = new ListViewItem(item.name);
+                                listViewItem.SubItems.Add(item.value.ToString());
+                                lootListListView.Items.Add(listViewItem);
+                            }
+
+                            lootListListView.Columns[0].AutoResize(ColumnHeaderAutoResizeStyle.ColumnContent);
+                            lootListListView.Columns[1].Width = 100;
+                        }
+                    }
+                }          
             }
         }
 
@@ -1040,7 +1088,11 @@ namespace eft_dma_radar
 
                                     var friendlyMapPos = friendlyPos.ToMapPos(_selectedMap);
 
-                                    if (IsAggressorFacingTarget(playerMapPos.GetPoint(), player.Rotation.X, friendlyMapPos.GetPoint(), friendlyDist))
+                                    if (!player.IsHuman)
+                                    {
+                                        aimlineLength = 15; // shorten AI aimline
+                                    }
+                                    else if (IsAggressorFacingTarget(playerMapPos.GetPoint(), player.Rotation.X, friendlyMapPos.GetPoint(), friendlyDist))
                                     {
                                         aimlineLength = 1000; // Lengthen aimline
                                         break;
@@ -1893,8 +1945,6 @@ namespace eft_dma_radar
                     {
                         DrawMap(canvas);
 
-                        DrawPlayers(canvas);
-
                         if (!_config.ShowLoot && _config.ShowCorpses)
                             DrawCorpses(canvas);
 
@@ -1912,6 +1962,8 @@ namespace eft_dma_radar
                             DrawAimview(canvas);
 
                         DrawToolTips(canvas);
+
+                        DrawPlayers(canvas); // draw last to make them appear on top
                     }
                 }
                 else
@@ -2159,18 +2211,6 @@ namespace eft_dma_radar
         private void sldrMagDrillsSpeed_onValueChanged(object sender, int newValue)
         {
             _config.MagDrillSpeed = newValue;
-
-            if (_config.MaxSkills["Mag Drills"] && Memory.LocalPlayer is not null)
-            {
-                var loadSpeedSkill = Memory.PlayerManager.Skills["MagDrills"]["LoadSpeed"];
-                loadSpeedSkill.MaxValue = (float)newValue;
-
-                var unloadSpeedSkill = Memory.PlayerManager.Skills["MagDrills"]["UnloadSpeed"];
-                unloadSpeedSkill.MaxValue = (float)newValue;
-
-                Memory.PlayerManager?.SetMaxSkill(loadSpeedSkill);
-                Memory.PlayerManager?.SetMaxSkill(unloadSpeedSkill);
-            }
         }
 
         private void swInfiniteStamina_CheckedChanged(object sender, EventArgs e)
@@ -2181,27 +2221,11 @@ namespace eft_dma_radar
         private void sldrJumpStrength_onValueChanged(object sender, int newValue)
         {
             _config.JumpPowerStrength = newValue;
-
-            if (_config.MaxSkills["Strength"] && Memory.LocalPlayer is not null)
-            {
-                var jumpHeightSkill = Memory.PlayerManager.Skills["Strength"]["BuffJumpHeightInc"];
-                jumpHeightSkill.MaxValue = 0.2f + ((float)newValue / 100);
-
-                Memory.PlayerManager?.SetMaxSkill(jumpHeightSkill);
-            }
         }
 
         private void sldrThrowStrength_onValueChanged(object sender, int newValue)
         {
             _config.ThrowPowerStrength = newValue;
-
-            if (_config.MaxSkills["Strength"] && Memory.LocalPlayer is not null)
-            {
-                var throwDistanceSkill = Memory.PlayerManager.Skills["Strength"]["BuffThrowDistanceInc"];
-                throwDistanceSkill.MaxValue = (float)newValue / 100;
-
-                Memory.PlayerManager?.SetMaxSkill(throwDistanceSkill);
-            }
         }
 
         private void cboThermalType_SelectedIndexChanged_1(object sender, EventArgs e)
@@ -2251,11 +2275,6 @@ namespace eft_dma_radar
             mcSettingsMemoryWritingGear.Enabled = isChecked;
             mcSettingsMemoryWritingThermal.Enabled = isChecked;
             mcSettingsMemoryWritingSkillBuffs.Enabled = isChecked;
-
-            if (isChecked)
-                Memory.Toolbox?.StartToolbox();
-            else
-                Memory.Toolbox?.StopToolbox();
         }
 
         private void swMaxEndurance_CheckedChanged(object sender, EventArgs e)
@@ -3757,5 +3776,6 @@ namespace eft_dma_radar
         #endregion
         #endregion
         #endregion
+
     }
 }

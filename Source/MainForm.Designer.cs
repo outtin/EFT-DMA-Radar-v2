@@ -306,6 +306,10 @@
             lstLootFilterEntries = new MaterialSkin.Controls.MaterialListView();
             colLootFilterItemName = new ColumnHeader();
             colLootFilterItemValue = new ColumnHeader();
+            tabPageLootList = new TabPage();
+            lootListListView = new MaterialSkin.Controls.MaterialListView();
+            columnName1 = new ColumnHeader();
+            columnValue1 = new ColumnHeader();
             iconList = new ImageList(components);
             tabControlMain.SuspendLayout();
             tabRadar.SuspendLayout();
@@ -379,6 +383,7 @@
             mcLootFilterFilters.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)picLootFilterColor).BeginInit();
             mcLootFilterItemManagement.SuspendLayout();
+            tabPageLootList.SuspendLayout();
             SuspendLayout();
             // 
             // colDialog
@@ -2472,6 +2477,7 @@
             tabControlMain.Controls.Add(tabPlayerLoadouts);
             tabControlMain.Controls.Add(tabWatchlist);
             tabControlMain.Controls.Add(tabLootFilter);
+            tabControlMain.Controls.Add(tabPageLootList);
             tabControlMain.Depth = 0;
             tabControlMain.Dock = DockStyle.Fill;
             tabControlMain.ImageList = iconList;
@@ -4926,6 +4932,48 @@
             colLootFilterItemValue.Text = "Value";
             colLootFilterItemValue.Width = 80;
             // 
+            // tabPageLootList
+            // 
+            tabPageLootList.BackColor = Color.DimGray;
+            tabPageLootList.Controls.Add(lootListListView);
+            tabPageLootList.Location = new Point(4, 39);
+            tabPageLootList.Name = "tabPageLootList";
+            tabPageLootList.Padding = new Padding(3);
+            tabPageLootList.Size = new Size(1297, 703);
+            tabPageLootList.TabIndex = 5;
+            tabPageLootList.Text = "Loot List";
+            // 
+            // lootListListView
+            // 
+            lootListListView.AutoSizeTable = false;
+            lootListListView.BackColor = Color.FromArgb(255, 255, 255);
+            lootListListView.BorderStyle = BorderStyle.None;
+            lootListListView.Columns.AddRange(new ColumnHeader[] { columnName1, columnValue1 });
+            lootListListView.Depth = 0;
+            lootListListView.Dock = DockStyle.Fill;
+            lootListListView.Font = new Font("Segoe UI", 14F, FontStyle.Bold, GraphicsUnit.Point);
+            lootListListView.FullRowSelect = true;
+            lootListListView.Location = new Point(3, 3);
+            lootListListView.MinimumSize = new Size(200, 100);
+            lootListListView.MouseLocation = new Point(-1, -1);
+            lootListListView.MouseState = MaterialSkin.MouseState.OUT;
+            lootListListView.Name = "lootListListView";
+            lootListListView.OwnerDraw = true;
+            lootListListView.Size = new Size(1291, 697);
+            lootListListView.TabIndex = 0;
+            lootListListView.UseCompatibleStateImageBehavior = false;
+            lootListListView.View = View.Details;
+            // 
+            // columnName1
+            // 
+            columnName1.Text = "Name";
+            columnName1.Width = 400;
+            // 
+            // columnValue1
+            // 
+            columnValue1.Text = "Value";
+            columnValue1.Width = 100;
+            // 
             // iconList
             // 
             iconList.ColorDepth = ColorDepth.Depth32Bit;
@@ -5048,6 +5096,7 @@
             ((System.ComponentModel.ISupportInitialize)picLootFilterColor).EndInit();
             mcLootFilterItemManagement.ResumeLayout(false);
             mcLootFilterItemManagement.PerformLayout();
+            tabPageLootList.ResumeLayout(false);
             ResumeLayout(false);
         }
 
@@ -5330,6 +5379,11 @@
         private MaterialSkin.Controls.MaterialListView lstFactionEntries;
         private ColumnHeader colFactionsAIName;
         private MaterialSkin.Controls.MaterialSwitch swUnknownQuestItems;
+        
+        private TabPage tabPageLootList;
+        private MaterialSkin.Controls.MaterialListView lootListListView;
+        private ColumnHeader columnName1;
+        private ColumnHeader columnValue1;
     }
 }
 
